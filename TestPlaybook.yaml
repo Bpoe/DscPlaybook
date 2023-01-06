@@ -1,0 +1,38 @@
+name: Demo configuration
+vars:
+  # Simple variables
+  UserName: TestUser
+  GroupName: TestGroup
+
+  # Variable with a value that is a hashtable
+  Foo:
+    bar: baz
+
+tasks:
+  - name: Ensure TestUser exists
+    resource: User
+    module: PSDscResources
+    settings:
+      UserName: $UserName # This is an example of how to use a simple variable
+    register: testuser_output # Register the results of the Get method to a variable named 'testuser_output'. Get is called after Set.
+    
+  - name: Ensure TestGroup exists
+    resource: Group
+    module: PSDscResources
+    settings:
+      GroupName: $($testuser_output.UserName) # This is an example of using a hashtable variable.
+    register: testgroup_output
+    when: $Foo.bar -ne "baz" # when is a condition that must return $true or else this task will be skipped
+
+  - name: Ensure Spooler service exists
+    resource: Service
+    module: PSDscResources
+    settings:
+      Name: Spooler
+
+  - name: Ensure Timezone is Pacific
+    resource: xTimeZone
+    module: xTimeZone
+    settings:
+      TimeZone: Pacific Standard Time
+      IsSingleInstance: yes

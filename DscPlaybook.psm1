@@ -20,38 +20,41 @@ function Invoke-DscPlaybook {
     $pipeline = get-content $FilePath | ConvertFrom-Yaml
 
     # Set Env variables from pipeline
-    SetVariables -Variables $pipeline.vars
+    SetVariables -Variables $pipeline.variables
 
     Write-Host "PLAY [$($pipeline.name)]"
 
     # Execute Tasks
-    foreach ($task in $pipeline.tasks) {
+    foreach ($task in $pipeline.resources) {
         Write-Host ""
         Write-Host "TASK [$($task.name)]"
 
-        if ($null -ne $task.when -and (Invoke-Expression $task.when) -eq $false) {
+        if ($null -ne $task.condition -and (Invoke-Expression $task.condition) -eq $false) {
             Write-Host "skipping" -ForegroundColor Cyan
             continue
         }
 
+        $module = $task.type.Split("/")[0]
+        $resourceType = $task.type.Split("/")[1]
+
         # Install the module if needed
-        $installedModule = Get-InstalledModule -Name $task.module -ErrorAction SilentlyContinue
+        $installedModule = Get-InstalledModule -Name $module -ErrorAction SilentlyContinue
         if ($null -eq $installedModule) {
             Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-            Install-Module -Name $task.module -Confirm:$false -AcceptLicense -Repository PSGallery
+            Install-Module -Name $module -Confirm:$false -AcceptLicense -Repository PSGallery
         }
 
         # Expand variables in the input values
         $Property = @{}
-        foreach ($key in $task.settings.Keys) {
-            $inputValue = $ExecutionContext.InvokeCommand.ExpandString($task.settings[$key])
+        foreach ($key in $task.properties.Keys) {
+            $inputValue = $ExecutionContext.InvokeCommand.ExpandString($task.properties[$key])
 
             $Property.Add($key, $inputValue)
         }
 
         $parameters = @{
-            Name = $task.resource
-            ModuleName = $task.module
+            Name = $resourceType
+            ModuleName = $module
             Method = "Test"
             Property = $Property
         }

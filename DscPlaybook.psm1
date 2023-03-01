@@ -1,3 +1,5 @@
+$references = @{}
+
 function SetVariables {
     param (
         [hashtable] $Variables
@@ -8,6 +10,31 @@ function SetVariables {
         New-Variable -Name $varName -Value $Variables[$key] -Scope Script -Force | Out-Null
         New-Item -Path env:$varName -Value $Variables[$key] -ErrorAction SilentlyContinue
     }
+}
+
+function variables {
+    param ([string] $Name)
+
+    Get-Variable -Name $Name -ValueOnly
+}
+
+function reference {
+    param ([string] $Name)
+
+    $value = $references[$Name]
+    return $value
+}
+
+function equals {
+    param ([string] $Left, [string] $Right)
+
+    return [System.String]::Equals($Left, $Right)
+}
+
+function not {
+    param ([Boolean] $Statement)
+
+    return $Statement -ne $true
 }
 
 function Invoke-DscPlaybook {
@@ -22,12 +49,12 @@ function Invoke-DscPlaybook {
     # Set Env variables from pipeline
     SetVariables -Variables $pipeline.variables
 
-    Write-Host "PLAY [$($pipeline.name)]"
+    $references.Clear()
 
     # Execute Tasks
     foreach ($task in $pipeline.resources) {
         Write-Host ""
-        Write-Host "TASK [$($task.name)]"
+        Write-Host "Resource [$($task.type)/$($task.name)]"
 
         if ($null -ne $task.condition -and (Invoke-Expression $task.condition) -eq $false) {
             Write-Host "skipping" -ForegroundColor Cyan
@@ -78,10 +105,9 @@ function Invoke-DscPlaybook {
             Write-Host "change needed" -ForegroundColor Yellow
         }
 
-        if ($null -ne $task.register) {
-            $parameters.Method = "Get"
-            $output_var = Invoke-DscResource @parameters
-            New-Variable -Name $task.register -Value $output_var -Scope Script -Force
-        }
+        # Register reference
+        $parameters.Method = "Get"
+        $output_var = Invoke-DscResource @parameters
+        $references.Add($task.name, $output_var)
     }
 }

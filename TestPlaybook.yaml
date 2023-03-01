@@ -3,25 +3,22 @@ variables:
   userName: TestUser
   groupName: TestGroup
 
-  # Variable with a value that is a hashtable
-  foo:
+  foo: # Variable with a value that is a hashtable
     bar: baz
 
 resources:
-  - name: test-user
+  - name: test-user # The results of the Get method are stored in a variable named 'test-user'. Get is called after Set. When name contains a special character, use ${test user}
     type: PSDscResources/User
     properties:
-      UserName: $userName # This is an example of how to use a simple variable
-    register: testuser_output # Register the results of the Get method to a variable named 'testuser_output'. Get is called after Set.
+      UserName: $(variables('userName')) # This is an example of how to use a simple variable
     
-  - condition: $foo.bar -ne "baz" # when is a condition that must return $true or else this task will be skipped
-    name: test-group
+  - name: test-group
     type: PSDscResources/Group
     properties:
-      GroupName: $($testuser_output.UserName) # This is an example of using a hashtable variable.
-    register: testgroup_output
+      GroupName: $($(reference('test-user')).UserName)
 
-  - name: spooler-service
+  - condition: $(not(equals($(variables('foo')).bar, 'baz'))) # Conditions must return $true or else this task will be skipped
+    name: spooler-service
     type: PSDscResources/Service
     properties:
       Name: Spooler

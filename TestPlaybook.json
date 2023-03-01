@@ -1,4 +1,10 @@
 {
+  "parameters": {
+    "timeZone": {
+      "type": "string",
+      "defaultValue": "Pacific Standard Time"
+    }
+  },
   "variables": {
       "userName": "TestUser",
       "groupName": "TestGroup",
@@ -7,35 +13,35 @@
       }
   },
   "resources": [
-      {
-          "name": "test-user",
-          "type": "PSDscResources/User",
-          "properties": {
-              "UserName": "$(variables('userName'))"
-          }
-      },
-      {
-          "name": "test-group",
-          "type": "PSDscResources/Group",
-          "properties": {
-              "GroupName": "$($(reference('test-user')).UserName)"
-          }
-      },
-      {
-          "condition": "$(not(equals($(variables('foo')).bar, 'baz')))",
-          "name": "spooler-service",
-          "type": "PSDscResources/Service",
-          "properties": {
-              "Name": "Spooler"
-          }
-      },
-      {
-          "name": "timezone",
-          "type": "xTimeZone/xTimeZone",
-          "properties": {
-              "TimeZone": "Pacific Standard Time",
-              "IsSingleInstance": "yes"
-          }
+    {
+      "name": "test-user",
+      "type": "PSDscResources/User",
+      "properties": {
+        "UserName": "$(variables('userName'))"
       }
+    },
+    {
+      "name": "test-group",
+      "type": "PSDscResources/Group",
+      "properties": {
+        "GroupName": "$($(reference('test-user')).UserName)"
+      }
+    },
+    {
+      "condition": "$(not(equals($(variables('foo')).bar, 'baz')))",
+      "name": "spooler-service",
+      "type": "PSDscResources/Service",
+      "properties": {
+        "Name": "Spooler"
+        }
+    },
+    {
+      "name": "timezone",
+      "type": "xTimeZone/xTimeZone",
+      "properties": {
+        "TimeZone": "$(parameters('timeZone'))",
+        "IsSingleInstance": "yes"
+      }
+    }
   ]
 }

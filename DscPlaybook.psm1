@@ -1,21 +1,47 @@
 $references = @{}
+$variables = @{}
+$parameters = @{}
 
 function SetVariables {
     param (
-        [hashtable] $Variables
+        [hashtable] $Source,
+        [hashtable] $Target
     )
     
-    foreach ($key in $Variables.Keys) {
+    foreach ($key in $Source.Keys) {
+        $Target.Add($key, $Source[$key])
+
         $varName = $key.Replace(".", "_")
-        New-Variable -Name $varName -Value $Variables[$key] -Scope Script -Force | Out-Null
-        New-Item -Path env:$varName -Value $Variables[$key] -ErrorAction SilentlyContinue
+        New-Variable -Name $varName -Value $Source[$key] -Scope Script -Force | Out-Null
+        New-Item -Path env:$varName -Value $Source[$key] -ErrorAction SilentlyContinue
     }
+}
+
+function GetDefaultValues {
+    param (
+        [hashtable] $Source
+    )
+    
+    $values = @{}
+    foreach ($key in $Source.Keys) {
+        $values.Add($key, $Source[$key].defaultValue)
+    }
+
+    return $values
+}
+
+function parameters {
+    param ([string] $Name)
+
+    $value = $parameters[$Name]
+    return $value
 }
 
 function variables {
     param ([string] $Name)
 
-    Get-Variable -Name $Name -ValueOnly
+    $value = $variables[$Name]
+    return $value
 }
 
 function reference {
@@ -44,12 +70,22 @@ function Invoke-DscPlaybook {
         [string] $Mode = "Test"
     )
 
-    $pipeline = get-content $FilePath | ConvertFrom-Yaml
+    $fileExtension = [System.IO.Path]::GetExtension($FilePath)
 
-    # Set Env variables from pipeline
-    SetVariables -Variables $pipeline.variables
+    if ($fileExtension -eq ".yaml" -or $fileExtension -eq ".yml") {
+        $pipeline = get-content $FilePath | ConvertFrom-Yaml
+    }
+    elseif ($fileExtension -eq ".json") {
+        $pipeline = get-content $FilePath | ConvertFrom-Json -AsHashtable
+    }
 
+    $parameters.Clear()
+    $variables.Clear()
     $references.Clear()
+
+    $defaultValues = GetDefaultValues -Source $pipeline.parameters
+    SetVariables -Source $pipeline.variables -Target $variables
+    SetVariables -Source $defaultValues -Target $parameters
 
     # Execute Tasks
     foreach ($task in $pipeline.resources) {
@@ -79,22 +115,24 @@ function Invoke-DscPlaybook {
             $Property.Add($key, $inputValue)
         }
 
-        $parameters = @{
+        $resourceParameters = @{
             Name = $resourceType
             ModuleName = $module
             Method = "Test"
             Property = $Property
         }
 
+        $resourceParameters
+
         # Execute Test for task
-        $result = Invoke-DscResource @parameters
+        $result = Invoke-DscResource @resourceParameters
         if ($result.InDesiredState) {
             Write-Host "ok" -ForegroundColor Green
         }
         elseif ($Mode -eq "Set") {
-            $parameters.Method = "Set"
+            $resourceParameters.Method = "Set"
             try {
-                Invoke-DscResource @parameters
+                Invoke-DscResource @resourceParameters
                 Write-Host "changed" -ForegroundColor Yellow
             }
             catch {
@@ -106,8 +144,8 @@ function Invoke-DscPlaybook {
         }
 
         # Register reference
-        $parameters.Method = "Get"
-        $output_var = Invoke-DscResource @parameters
+        $resourceParameters.Method = "Get"
+        $output_var = Invoke-DscResource @resourceParameters
         $references.Add($task.name, $output_var)
     }
 }

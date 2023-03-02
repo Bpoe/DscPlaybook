@@ -6,11 +6,11 @@
     }
   },
   "variables": {
-      "userName": "TestUser",
-      "groupName": "TestGroup",
-      "foo": {
-          "bar": "baz"
-      }
+    "userName": "TestUser",
+    "groupName": "TestGroup",
+    "foo": {
+      "bar": "baz"
+    }
   },
   "resources": [
     {
@@ -24,7 +24,10 @@
       "name": "test-group",
       "type": "PSDscResources/Group",
       "properties": {
-        "GroupName": "$($(reference('test-user')).UserName)"
+        "GroupName": "$(variables('groupName'))",
+        "MembersToInclude": [
+          "$($(reference('test-user')).UserName)"
+        ]
       }
     },
     {
@@ -41,6 +44,14 @@
       "properties": {
         "TimeZone": "$(parameters('timeZone'))",
         "IsSingleInstance": "yes"
+      }
+    },
+    {
+      "name": "securityoption",
+      "type": "SecurityPolicyDsc/SecurityOption",
+      "properties": {
+        "Name": "SecurityOption",
+        "Accounts_Guest_account_status": "Disabled"
       }
     }
   ]

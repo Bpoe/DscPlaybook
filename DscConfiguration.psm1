@@ -141,8 +141,20 @@ function Invoke-DscConfiguration {
             Write-Host "change needed" -ForegroundColor Yellow
         }
 
-        # Register reference
+        # Remove all Properties except required properties or else the Get method gets mad
+        $resource = Get-DscResource -Module $module -Name $resourceType
+        $mandatoryProperties = @()
+        $resource.Properties | where { $_.IsMandatory } | foreach { $mandatoryProperties += $_.Name }
+
+        $getProperties = @{}
+        foreach ($key in $resourceParameters.Property.Keys) {
+            if ($mandatoryProperties.Contains($key)) {
+                $getProperties.Add($key, $resourceParameters.Property[$key])
+            }
+        }
+
         $resourceParameters.Method = "Get"
+        $resourceParameters.Property = $getProperties
         $output_var = Invoke-DscResource @resourceParameters
         $references.Add($task.name, $output_var)
     }

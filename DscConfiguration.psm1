@@ -63,7 +63,7 @@ function not {
     return $Statement -ne $true
 }
 
-function Invoke-DscPlaybook {
+function Invoke-DscConfiguration {
     param (
         [string] $FilePath,
         [ValidateSet("Test", "Set")]
@@ -121,8 +121,6 @@ function Invoke-DscPlaybook {
             Method = "Test"
             Property = $Property
         }
-
-        $resourceParameters
 
         # Execute Test for task
         $result = Invoke-DscResource @resourceParameters

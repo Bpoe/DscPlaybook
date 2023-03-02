@@ -33,7 +33,7 @@
       "type": "PSDscResources/Service",
       "properties": {
         "Name": "Spooler"
-        }
+      }
     },
     {
       "name": "timezone",

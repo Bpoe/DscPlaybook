@@ -21,8 +21,8 @@ resources:
     type: PSDscResources/Group
     properties:
       GroupName: $(variables('groupName'))
-      MembersToInclude:
-        - $($(reference('test-user')).UserName)
+      # MembersToInclude:
+        #- $($(reference('test-user')).UserName)
 
   - condition: $(not(equals($(variables('foo')).bar, 'baz'))) # Conditions must return $true or else this task will be skipped
     name: spooler-service

@@ -7,11 +7,13 @@ resources:
   type: Microsoft.Windows.DSC/AssertWindows
   properties:
     versionMinimum: 10.0.17763.0
+
 - name: Enable Developer Mode
   type: Microsoft.Windows.DSC/DeveloperMode
   properties: {}
   dependsOn:
   - Microsoft.Windows.DSC/AssertWindows/Assert Windows 10.0.17763.0
+
 - name: vsPackage
   type: Microsoft.WinGet.DSC/WinGetPackage
   properties:
@@ -19,6 +21,7 @@ resources:
     source: winget
   dependsOn:
   - Microsoft.Windows.DSC/AssertWindows/Assert Windows 10.0.17763.0
+
 - name: Install required VS components
   type: Microsoft.VisualStudio.DSC/VisualStudioComponents
   properties:
@@ -28,6 +31,7 @@ resources:
   dependsOn:
   - Microsoft.Windows.DSC/AssertWindows/Assert Windows 10.0.17763.0
   - Microsoft.WinGet.DSC/WinGetPackage/vsPackage
+
 - name: Install VS extension for MSI
   type: Microsoft.VisualStudio.DSC/VisualStudioExtension
   properties:

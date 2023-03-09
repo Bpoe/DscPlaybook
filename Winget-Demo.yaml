@@ -1,0 +1,41 @@
+parameters: {}
+
+variables: {}
+  
+resources:
+- name: AssertWindows 10.0.17763.0
+  type: Microsoft.Windows.DSC/AssertWindows
+  properties:
+    versionMinimum: 10.0.17763.0
+- name: Enable Developer Mode
+  type: Microsoft.Windows.DSC/DeveloperMode
+  properties: {}
+  dependsOn:
+  - Microsoft.Windows.DSC/AssertWindows/Assert Windows 10.0.17763.0
+- name: vsPackage
+  type: Microsoft.WinGet.DSC/WinGetPackage
+  properties:
+    id: Microsoft.VisualStudio.2022.Community
+    source: winget
+  dependsOn:
+  - Microsoft.Windows.DSC/AssertWindows/Assert Windows 10.0.17763.0
+- name: Install required VS components
+  type: Microsoft.VisualStudio.DSC/VisualStudioComponents
+  properties:
+    productId: Microsoft.VisualStudio.Product.Community
+    channelId: VisualStudio.17.Release
+    vsconfigFile: .vsconfig
+  dependsOn:
+  - Microsoft.Windows.DSC/AssertWindows/Assert Windows 10.0.17763.0
+  - Microsoft.WinGet.DSC/WinGetPackage/vsPackage
+- name: Install VS extension for MSI
+  type: Microsoft.VisualStudio.DSC/VisualStudioExtension
+  properties:
+    productId: Microsoft.VisualStudio.Product.Community
+    channelId: VisualStudio.17.Release
+    publisher: VisualStudioClient
+    name: MicrosoftVisualStudio2022InstallerProjects
+  dependsOn:
+  - Microsoft.Windows.DSC/AssertWindows/Assert Windows 10.0.17763.0
+  - Microsoft.WinGet.DSC/WinGetPackage/vsPackage
+
